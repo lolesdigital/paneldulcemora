@@ -1,9 +1,0 @@
-{
-  "name": "Dulce Mora · Panel",
-  "short_name": "Dulce Mora",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#FCEFF3",
-  "theme_color": "#EB6893",
-  "icons": []
-}
