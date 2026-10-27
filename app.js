@@ -489,23 +489,96 @@ $('productSearch').addEventListener('input',renderProducts);
 $('viewCartBtn').addEventListener('click',()=>go('cart'));
 $('clearCartBtn').addEventListener('click',()=>{state.cart=[];renderAll();});
 
+
+function resetPedidoForm(){
+  state.cart = [];
+  state.shipping = { km:null, cost:0, time:'', maps:'' };
+
+  $('customerName').value = '';
+  $('customerPhone').value = '';
+  $('customerAddress').value = '';
+  $('customerRefs').value = '';
+  $('cashGiven').value = '';
+  $('orderNotes').value = '';
+  $('hasDelivery').checked = false;
+  $('deliveryFields').classList.add('hidden');
+  $('shippingResultCard').classList.add('hidden');
+
+  $('paymentMethod').value = 'Efectivo';
+  $('cashBox').classList.remove('hidden');
+  $('transferBox').classList.add('hidden');
+
+  if($('transferPaid')) $('transferPaid').value = 'Sí';
+
+  $('saveStatus').textContent = '';
+  $('productSearch').value = '';
+
+  renderProducts();
+  renderAll();
+}
+
+function resetExpenseForm(){
+  $('expenseSupplier').value = '';
+  $('expenseConcept').value = '';
+  $('expenseAmount').value = '';
+  $('expenseNotes').value = '';
+  $('expensePayment').value = 'Efectivo';
+  $('expenseType').value = 'Gasto pagado';
+  $('expenseStatus').textContent = '';
+}
+
 $('confirmOrderBtn').addEventListener('click',async()=>{
   const order=buildOrder();
-  if(!order.items.length){ alert('Agregá al menos un producto.'); return; }
-  if(order.con_envio && (!order.cliente||!order.telefono||!order.direccion)){ alert('Completá nombre, teléfono y dirección.'); return; }
-  if(order.con_envio && state.shipping.km==null){ alert('Primero calculá el envío.'); return; }
 
-  $('saveStatus').textContent='Guardando...';
+  if(!order.items.length){
+    alert('Agregá al menos un producto.');
+    return;
+  }
+
+  if(order.con_envio && (!order.cliente||!order.telefono||!order.direccion)){
+    alert('Completá nombre, teléfono y dirección.');
+    return;
+  }
+
+  if(order.con_envio && state.shipping.km==null){
+    alert('Primero calculá el envío.');
+    return;
+  }
+
+  $('confirmOrderBtn').disabled = true;
+  $('saveStatus').textContent='Guardando en Pedidos Local...';
+
   try{
     const res=await api('saveOrder',order);
-    if(!res.ok) throw new Error(res.error||'No pude guardar el pedido.');
-    state.lastOrder=order;
-    $('saveStatus').textContent='Pedido guardado ✅';
-    if(Array.isArray(res.products)) state.products=ensureManualProducts(res.products);
-    renderAll();
+
+    if(!res || res.ok!==true){
+      throw new Error((res&&res.error)||'No se pudo guardar el pedido en Google Sheets.');
+    }
+
+    state.lastOrder = order;
+
+    if(Array.isArray(res.products)){
+      state.products=ensureManualProducts(res.products);
+    }
+
+    const detalle = res.firstRow
+      ? `Pedido guardado en "Pedidos Local" · fila ${res.firstRow} ✅`
+      : 'Pedido guardado en "Pedidos Local" ✅';
+
+    $('saveStatus').textContent = detalle;
+
+    alert(detalle);
+
+    resetPedidoForm();
+    go('products');
+
   }catch(e){
-    $('saveStatus').textContent='';
-    alert(e.message);
+    $('saveStatus').textContent='❌ Pedido NO guardado';
+    alert('No se guardó el pedido.
+
+'+e.message);
+  }finally{
+    $('confirmOrderBtn').disabled = false;
   }
 });
 
@@ -560,11 +633,40 @@ $('saveExpenseBtn').addEventListener('click',async()=>{
     medio_pago:$('expensePayment').value,
     notas:$('expenseNotes').value.trim()
   };
+
+  if(!data.fecha || !data.concepto || data.importe<=0){
+    alert('Completá fecha, concepto e importe.');
+    return;
+  }
+
+  $('saveExpenseBtn').disabled = true;
+  $('expenseStatus').textContent='Guardando en Gastos...';
+
   try{
     const res=await api('saveExpense',data);
-    if(!res.ok) throw new Error(res.error||'No pude guardar.');
-    $('expenseStatus').textContent='Guardado ✅';
-  }catch(e){ alert(e.message); }
+
+    if(!res || res.ok!==true){
+      throw new Error((res&&res.error)||'No se pudo guardar el gasto en Google Sheets.');
+    }
+
+    const detalle = res.row
+      ? `Gasto guardado en "Gastos" · fila ${res.row} ✅`
+      : 'Gasto guardado en "Gastos" ✅';
+
+    $('expenseStatus').textContent=detalle;
+    alert(detalle);
+
+    resetExpenseForm();
+    initDates();
+
+  }catch(e){
+    $('expenseStatus').textContent='❌ Gasto NO guardado';
+    alert('No se guardó el gasto.
+
+'+e.message);
+  }finally{
+    $('saveExpenseBtn').disabled = false;
+  }
 });
 
 $('loadClosingBtn').addEventListener('click',async()=>{
