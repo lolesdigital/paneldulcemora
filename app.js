@@ -574,9 +574,7 @@ $('confirmOrderBtn').addEventListener('click',async()=>{
 
   }catch(e){
     $('saveStatus').textContent='❌ Pedido NO guardado';
-    alert('No se guardó el pedido.
-
-'+e.message);
+    alert('No se guardó el pedido.\n\n'+e.message);
   }finally{
     $('confirmOrderBtn').disabled = false;
   }
@@ -661,9 +659,7 @@ $('saveExpenseBtn').addEventListener('click',async()=>{
 
   }catch(e){
     $('expenseStatus').textContent='❌ Gasto NO guardado';
-    alert('No se guardó el gasto.
-
-'+e.message);
+    alert('No se guardó el gasto.\n\n'+e.message);
   }finally{
     $('saveExpenseBtn').disabled = false;
   }
