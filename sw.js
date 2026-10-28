@@ -1,4 +1,4 @@
-const CACHE='dulce-mora-panel-v1';
+const CACHE='dulce-mora-panel-v9-promos';
 const ASSETS=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));

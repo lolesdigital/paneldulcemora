@@ -23,6 +23,10 @@ const fallbackProducts = [
   {id:'p500',name:'½ Kg',price:10500,stock:null,status:'DISPONIBLE',image:'assets/img-d0a573bd8b62.webp'},
   {id:'p1k',name:'1 Kg',price:19000,stock:null,status:'DISPONIBLE',image:'assets/img-dbffc818c4e3.webp'},
   {id:'p2k',name:'2 Kg',price:36000,stock:null,status:'DISPONIBLE',image:'assets/img-3c8a2fede27d.webp'},
+  {id:'promo-halloween-cuarto-monstruo',name:'PROMO · Un cuarto para cada monstruo · 2 potes de ¼ kg',price:13000,stock:null,status:'DISPONIBLE',activeWeb:false,promo:true,promoFrom:'2026-10-26',promoThrough:'2026-10-31',image:'assets/promo-halloween-cuarto-monstruo.jpeg'},
+  {id:'promo-halloween-doble-susto',name:'PROMO · Doble susto, doble dulzura · ½ kg + Le Banana Bites',price:19000,stock:null,status:'DISPONIBLE',activeWeb:false,promo:true,promoFrom:'2026-10-26',promoThrough:'2026-10-31',freeShipping:true,image:'assets/promo-halloween-doble-susto.jpeg'},
+  {id:'promo-halloween-trio-monstruoso',name:'PROMO · Trío monstruoso · 3 postrecitos chicos',price:12500,stock:null,status:'DISPONIBLE',activeWeb:false,promo:true,promoFrom:'2026-10-26',promoThrough:'2026-10-31',image:'assets/promo-halloween-trio-monstruoso.jpeg'},
+  {id:'promo-halloween-dulce-noche',name:'PROMO · Dulce noche de terror · 1 kg + 4 cucuruchos',price:18000,stock:null,status:'DISPONIBLE',activeWeb:false,promo:true,promoFrom:'2026-10-26',promoThrough:'2026-10-31',image:'assets/promo-halloween-dulce-noche.jpeg'},
   {id:'hielo-2kg',name:'Hielo · 2 kg',price:3500,stock:null,status:'REVISAR',image:'assets/img-3e51d9755dd1.webp'},
   {id:'cucurucho-1',name:'Cucurucho',price:500,stock:null,status:'DISPONIBLE',activeWeb:false,image:'assets/cucurucho-1.png'},
   {id:'cucuruchos-4',name:'4 cucuruchos',price:1500,stock:null,status:'DISPONIBLE',activeWeb:false,image:'assets/cucuruchos-4.png'},
@@ -124,6 +128,26 @@ const SEARCH_ALIASES = {
   p1k:['kilo','un kilo','1 kilo','1kg','1000','1000g'],
   p2k:['dos kilos','2 kilos','2 kilo','2kg','2000','2000g']
 };
+
+function argentinaDateKey(){
+  try{
+    return new Intl.DateTimeFormat('en-CA',{
+      timeZone:'America/Argentina/Buenos_Aires',
+      year:'numeric',month:'2-digit',day:'2-digit'
+    }).format(new Date());
+  }catch(e){
+    const d=new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+}
+
+function isPromoActive(p){
+  if(!p || !p.promo) return true;
+  const today=argentinaDateKey();
+  const from=p.promoFrom||'0000-01-01';
+  const through=p.promoThrough||'9999-12-31';
+  return today>=from && today<=through;
+}
 
 function imageForProduct(p){
   const id=String(p.id||'');
@@ -294,11 +318,14 @@ function renderProducts(){
   const q=$('productSearch').value.trim();
 
   const ranked=state.products
-    .filter(p=>true)
+    .filter(p=>isPromoActive(p))
     .map(p=>({p,score:smartProductScore(p,q)}))
     .filter(x=>!q || x.score>=55)
-    .sort((a,b)=>b.score-a.score)
-    .slice(0,30);
+    .sort((a,b)=>{
+      const promoOrder=(b.p.promo?1:0)-(a.p.promo?1:0);
+      return promoOrder || b.score-a.score;
+    })
+    .slice(0,34);
 
   $('productList').innerHTML=ranked.map((entry,index)=>{
     const p=entry.p;
@@ -310,14 +337,17 @@ function renderProducts(){
     const disabled=false;
     const img=imageForProduct(p);
     const recommended=q && index===0 && entry.score>=70;
+    const promo=!!p.promo;
 
-    return `<div class="product-row ${recommended?'recommended':''}">
-      <div class="product-thumb product-photo"><img src="${img}" alt="${name}" onerror="this.parentElement.textContent='🍨'"></div>
-      <div>
+    return `<div class="product-row ${promo?'promo-product-row':''} ${recommended?'recommended':''}">
+      <div class="product-thumb product-photo ${promo?'promo-thumb':''}"><img src="${img}" alt="${name}" onerror="this.parentElement.textContent='🍨'"></div>
+      <div class="product-copy">
+        ${promo?'<div class="promo-label">🎃 PROMO HALLOWEEN · HASTA 31/10</div>':''}
         ${recommended?'<div class="recommended-label">Te recomendamos</div>':''}
         <div class="product-name">${name}</div>
         <div class="product-price">${money(price)}${stock!=null?` · stock ${stock}`:''}</div>
-        ${((Number(stock)===0)||status==='SIN STOCK')?'<div class="stock-badge">Sin stock · igual podés seleccionarlo</div>':(!p.activeWeb?'<div class="inactive-badge">No publicado en web</div>':'')}
+        ${promo && p.freeShipping?'<div class="promo-benefit">🛵 Envío gratis</div>':''}
+        ${(!promo && ((Number(stock)===0)||status==='SIN STOCK'))?'<div class="stock-badge">Sin stock · igual podés seleccionarlo</div>':(!promo && !p.activeWeb?'<div class="inactive-badge">No publicado en web</div>':'')}
       </div>
       <button class="plus-btn" ${disabled?'disabled':''} onclick="addProduct('${String(id).replace(/'/g,"\'")}')">${disabled?'×':'+'}</button>
     </div>`;
@@ -327,11 +357,21 @@ function renderProducts(){
 function addProduct(id){
   const p=state.products.find(x=>String(x.id)===String(id));
   if(!p) return;
+  if(p.promo && !isPromoActive(p)){
+    alert('Esta promo ya finalizó el 31/10 y no se puede cargar.');
+    renderProducts();
+    return;
+  }
   const name=p.name||p.nombre;
   const price=Number(p.price??p.precio??0);
   const existing=state.cart.find(x=>String(x.id)===String(id)&&!x.extra);
   if(existing) existing.qty++;
-  else state.cart.push({id,name,price,qty:1,extra:false,image:imageForProduct(p)});
+  else state.cart.push({
+    id,name,price,qty:1,extra:false,
+    image:imageForProduct(p),
+    promo:!!p.promo,
+    freeShipping:!!p.freeShipping
+  });
   renderAll();
 }
 
@@ -357,13 +397,15 @@ function cartTotals(){
   const extraProductTotal=state.cart.filter(x=>x.extra&&x.type!=='sauce').reduce((a,x)=>a+x.price*x.qty,0);
 
   const sauceQty=state.cart.filter(x=>x.extra&&x.type==='sauce').reduce((a,x)=>a+x.qty,0);
-  const potQty=state.cart.filter(x=>!x.extra && /¼|1\/4|½|1\/2|1 kg|2 kg|250|500/i.test(x.name)).reduce((a,x)=>a+x.qty,0);
+  const potQty=state.cart.filter(x=>!x.extra && /¼|1\/4|½|1\/2|1 kg|2 kg|250|500/i.test(x.name) && !x.promo).reduce((a,x)=>a+x.qty,0);
   const paidSauces=Math.max(0,sauceQty-potQty);
   const sauceTotal=paidSauces*1500;
 
   const subtotal=productTotal+extraProductTotal+sauceTotal;
-  const total=subtotal+Number(state.shipping.cost||0);
-  return {subtotal,total,sauceQty,potQty,paidSauces};
+  const hasFreeShippingPromo=state.cart.some(x=>!x.extra&&x.promo&&x.freeShipping&&x.qty>0);
+  const shippingCost=hasFreeShippingPromo?0:Number(state.shipping.cost||0);
+  const total=subtotal+shippingCost;
+  return {subtotal,total,sauceQty,potQty,paidSauces,shippingCost,hasFreeShippingPromo};
 }
 
 function renderCart(){
@@ -407,7 +449,7 @@ function renderAll(){
   $('cartMiniTotal').textContent=money(t.total);
   $('cartScreenTotal').textContent=money(t.total);
   $('summaryProducts').textContent=money(t.subtotal);
-  $('summaryShipping').textContent=money(state.shipping.cost||0);
+  $('summaryShipping').textContent=t.hasFreeShippingPromo?'GRATIS':money(t.shippingCost);
   $('summaryTotal').textContent=money(t.total);
 
   const cash=Number($('cashGiven')?.value||0);
@@ -427,13 +469,13 @@ function buildOrder(){
     referencias:$('customerRefs').value.trim(),
     con_envio:$('hasDelivery').checked,
     distancia_km:state.shipping.km??'',
-    costo_envio:state.shipping.cost||0,
+    costo_envio:t.shippingCost,
     maps_link:state.shipping.maps||'',
     medio_pago:$('paymentMethod').value,
     transferencia_pagada:$('paymentMethod').value==='Transferencia' ? $('transferPaid').value : '',
     paga_con:$('paymentMethod').value==='Efectivo' ? Number($('cashGiven').value||0) : '',
     vuelto:$('paymentMethod').value==='Efectivo' ? Math.max(0,Number($('cashGiven').value||0)-t.total) : 0,
-    notas:$('orderNotes').value.trim(),
+    notas:[t.hasFreeShippingPromo?'Promo Halloween: envío gratis':'',$('orderNotes').value.trim()].filter(Boolean).join(' · '),
     items:state.cart.filter(x=>!x.extra).map(x=>({id:x.id,nombre:x.name,precio:x.price,cantidad:x.qty})),
     extras:state.cart.filter(x=>x.extra).map(x=>({id:x.id,nombre:x.name,precio:x.price,cantidad:x.qty,tipo:x.type})),
     subtotal:t.subtotal,

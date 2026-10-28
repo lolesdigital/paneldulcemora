@@ -240,3 +240,41 @@ label{display:block;font-size:14px;font-weight:800;margin:13px 0 6px}
 .stock-badge{
   max-width:fit-content;
 }
+
+/* Promos Halloween 26–31/10 */
+.promo-product-row{
+  border:2px solid #EB6893;
+  background:linear-gradient(135deg,#fff7fb,#f4fbfd);
+  align-items:center;
+}
+.promo-product-row .promo-thumb{
+  width:82px;
+  height:108px;
+  border-radius:16px;
+  flex:0 0 82px;
+  overflow:hidden;
+  background:#fbe1eb;
+}
+.promo-product-row .promo-thumb img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.promo-label{
+  display:inline-block;
+  margin-bottom:4px;
+  padding:4px 7px;
+  border-radius:999px;
+  background:#EB6893;
+  color:white;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.02em;
+}
+.promo-benefit{
+  margin-top:4px;
+  color:#168b66;
+  font-size:12px;
+  font-weight:900;
+}
+.product-copy{min-width:0;flex:1;}
