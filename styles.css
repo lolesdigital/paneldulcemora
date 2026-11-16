@@ -72,7 +72,7 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 label{display:block;font-size:14px;font-weight:800;margin:13px 0 6px}
 .product-list{display:grid;gap:9px;margin-top:12px}
 .product-row{
-  display:grid;grid-template-columns:58px 1fr 48px;gap:10px;align-items:center;
+  display:grid;grid-template-columns:58px 1fr 96px;gap:10px;align-items:center;
   padding:8px;border:1px solid #F1E1E7;border-radius:17px;background:#FFF
 }
 .product-thumb{
@@ -278,3 +278,9 @@ label{display:block;font-size:14px;font-weight:800;margin:13px 0 6px}
   font-weight:900;
 }
 .product-copy{min-width:0;flex:1;}
+
+.product-actions{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.availability-btn{width:92px;min-height:28px;padding:4px 7px;border:0;border-radius:999px;font-size:10px;font-weight:900;cursor:pointer}
+.availability-btn.on{background:#E5F7EA;color:#227A3D}
+.availability-btn.off{background:#F1EEF0;color:#7C6870}
+.product-actions .plus-btn{width:44px;height:38px;border-radius:12px}

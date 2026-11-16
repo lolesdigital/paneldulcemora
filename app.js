@@ -349,11 +349,17 @@ function renderProducts(){
         ${promo && p.freeShipping?'<div class="promo-benefit">🛵 Envío gratis</div>':''}
         ${(!promo && ((Number(stock)===0)||status==='SIN STOCK'))?'<div class="stock-badge">Sin stock · igual podés seleccionarlo</div>':(!promo && !p.activeWeb?'<div class="inactive-badge">No publicado en web</div>':'')}
       </div>
-      <button class="plus-btn" ${disabled?'disabled':''} onclick="addProduct('${String(id).replace(/'/g,"\'")}')">${disabled?'×':'+'}</button>
+      <div class="product-actions">
+        ${!promo?`<button class="availability-btn ${p.activeWeb===false||status==='OCULTO'?'off':'on'}"
+          onclick="toggleProductAvailability('${String(id).replace(/'/g,"\'")}', ${!(p.activeWeb===false||status==='OCULTO')})">
+          ${p.activeWeb===false||status==='OCULTO'?'Desactivado':'Activo'}
+        </button>`:''}
+        <button class="plus-btn" ${disabled?'disabled':''} onclick="addProduct('${String(id).replace(/'/g,"\'")}')">${disabled?'×':'+'}</button>
+      </div>
     </div>`;
   }).join('') || '<p class="helper">No encontré productos. Probá escribirlo de otra forma.</p>';
 }
-
+\nasync function toggleProductAvailability(id,currentActive){\n  const p=state.products.find(x=>String(x.id)===String(id));\n  if(!p) return;\n  const nextActive=!currentActive;\n  const oldActive=p.activeWeb;\n  const oldStatus=p.status;\n  p.activeWeb=nextActive;\n  p.status=nextActive ? ((p.stock!=null && Number(p.stock)<=0)?'SIN STOCK':'DISPONIBLE') : 'OCULTO';\n  renderProducts();\n  try{\n    const res=await api('setProductActive',{id,active:nextActive});\n    if(!res || res.ok!==true) throw new Error((res&&res.error)||'No se pudo actualizar el producto.');\n    await loadProducts();\n  }catch(e){\n    p.activeWeb=oldActive;\n    p.status=oldStatus;\n    renderProducts();\n    alert('No se pudo cambiar la disponibilidad.\\n\\n'+e.message);\n  }\n}\n
 function addProduct(id){
   const p=state.products.find(x=>String(x.id)===String(id));
   if(!p) return;
